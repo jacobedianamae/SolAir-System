@@ -126,6 +126,8 @@ export default function Lab({
       }
       await api("/bench/results", "POST", {
         session_id: sid,
+        device_id: vehicle.device_id,
+        mode,
         test,
         result,
         measurements,
@@ -215,7 +217,8 @@ export default function Lab({
         <span>Heartbeat {stamp(vehicle.telemetry?.received_at)}</span>
       </div>
       <div className="lab-grid">
-        <CpeReadings t={t} />
+        <section className="panel"><h3>Sensor sample age</h3><p>Independent of device contact and GPS-fix age. These ages were reported at acquisition, not proof of current connectivity.</p>{t&&Object.entries(t.sensor_age_ms||{}).length?<ul>{Object.entries(t.sensor_age_ms||{}).map(([sensor,age])=><li key={sensor}>{sensor}: {age} ms at frame capture</li>)}</ul>:<p>Sensor ages unavailable in this firmware frame.</p>}</section>
+      <CpeReadings t={t} />
         <section className="panel">
           <div className="panel-heading">
             <h3>
@@ -438,6 +441,7 @@ export default function Lab({
             <Download size={16} />
             Export JSON
           </button>
+          <a className="button" href={`/api/bench-export/${encodeURIComponent(vehicle.device_id||'')}?mode=${mode}`}>Export evidence CSV</a>
         </div>
         <div className="button-row">
           <button

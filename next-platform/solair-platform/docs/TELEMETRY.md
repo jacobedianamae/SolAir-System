@@ -68,3 +68,8 @@ Demo and hardware records use independent `mode` partitions in telemetry, energy
 `POST /api/ingest`, JSON body, device `Authorization: Bearer <token>` for Wi-Fi/LTE. USB uses session auth and `X-Bench-Transport: usb` from CPE Lab. Device-token provision/rotation is engineer/admin only. Tokens are hashed in the database and returned once. Human admin/server credentials never belong in firmware.
 
 Rate limits: 300 ingest requests/minute/IP, 10 login attempts/minute/IP. Payload is limited, schema strict, future timestamps/replayed sequence rejected, duplicate sequence acknowledged idempotently. Atomic inserts preserve telemetry and related energy/GPS/events together. Fleet updates use organization-scoped SSE invalidations; clients refetch only authorized data.
+
+
+## Operational firmware 2.1 timestamp clarification
+
+`device_timestamp` / `device_uptime_ms` describe frame/measurement capture. Optional `event_timestamp` / `event_uptime_ms` describe the separately captured cause occurrence. Explicit null event UTC remains unknown even if capture happens after NTP synchronization; legacy frames without these optional fields retain their documented fallback. Sensor ages use successful reads; ADS1115 reports the oldest of its four channel samples. Do not attach a fresh acquisition-time GPS fix to an older event as if it were the event location. These semantics are implemented and compiled; actual timing/fix correctness still requires bench evidence.

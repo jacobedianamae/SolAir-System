@@ -14,7 +14,8 @@
     "db:migrate": "tsx server/migrate.ts",
     "bootstrap": "tsx server/bootstrap.ts",
     "retention": "tsx server/retention.ts",
-    "test:pwa": "tsx tests/pwa.ts"
+    "test:pwa": "tsx tests/pwa.ts",
+    "start:combined": "node scripts/start-combined.mjs"
   },
   "dependencies": {
     "@fontsource/dm-sans": "5.2.6",

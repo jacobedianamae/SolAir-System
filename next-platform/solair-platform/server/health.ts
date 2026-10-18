@@ -5,7 +5,7 @@ export async function sweepOffline(db: Store, notify: (org: string) => void) {
   );
   for (const d of devices) {
     const [t] = await db.query(
-      "SELECT id,received_at FROM telemetry WHERE device_id=? AND mode='hardware' AND id NOT IN (SELECT telemetry_id FROM cpe_samples WHERE historical=1) ORDER BY received_at DESC LIMIT 1",
+      "SELECT id,received_at FROM telemetry WHERE device_id=? AND mode='hardware' AND id NOT IN (SELECT telemetry_id FROM cpe_samples WHERE historical=1) AND id NOT IN (SELECT telemetry_id FROM archived_frames) ORDER BY received_at DESC LIMIT 1",
       [d.id],
     );
     if (!t || Date.now() - Date.parse(t.received_at) < 90000) continue;

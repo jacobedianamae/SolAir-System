@@ -57,6 +57,7 @@ struct Modules {
  int16_t mpuRaw[7]={};float acsMV=0,acsCurrent=0;bool acsOK=false;
  uint32_t imuAt=0,adsAt=0,acsAt=0,pzemAt=0,rsSent=0,gpsByteAt=0;int adsChannel=0;
  uint32_t adsStarted=0,adsSamples=0;uint8_t adsMask=0;
+ uint32_t imuSampleAt=0,acsSampleAt=0,pzemSampleAt=0,adsSampleAt[4]={};
  uint8_t rsBytes[64];size_t rsCount=0;bool rsPending=false,rsRangeQuery=false,shunt50OK=false;uint32_t shuntAt=0;PzemReading meter{};
  uint32_t gpsOverflows=0;bool atDetected=false,registered=false,attached=false;
  int rssi=-1;uint32_t lteAt=0,lteResponseAt=0;int lteStep=0;String lteLine;
@@ -83,6 +84,7 @@ struct Modules {
     mpuOK=present(MPU_ADDRESS);if(mpuOK&&!mpuSeen){mpuOK=mpu.begin(MPU_ADDRESS);mpuSeen=mpuOK;if(mpuOK){mpu.setAccelerometerRange(MPU6050_RANGE_4_G);mpu.setGyroRange(MPU6050_RANGE_500_DEG);}}
     if(mpuOK){mpu.getEvent(&accel,&gyro,&temp);uint8_t bytes[14];mpuOK=imuIo.read(0x3b,bytes,sizeof(bytes));if(mpuOK)for(int i=0;i<7;i++)mpuRaw[i]=int16_t((uint16_t(bytes[i*2])<<8)|bytes[i*2+1]);}
    }
+   if(mpuOK)imuSampleAt=millis();
   }
   if(ENABLE_ADS&&uint32_t(now-adsAt)>=20){adsAt=now;
    if(!present(0x48)){adsOK=false;adsSeen=false;adsMask=0;}
@@ -90,12 +92,12 @@ struct Modules {
     if(!adsSeen){adsSeen=ads.begin(0x48);adsOK=false;adsMask=0;adsChannel=0;if(adsSeen){ads.setGain(GAIN_ONE);ads.startADCReading(ADS1X15_REG_CONFIG_MUX_SINGLE_0,false);adsStarted=now;}}
     // OS completion polling is for single-shot mode; continuous mode stays busy.
     if(adsSeen&&ads.conversionComplete()){
-     adsRaw[adsChannel]=ads.getLastConversionResults();adsV[adsChannel]=ads.computeVolts(adsRaw[adsChannel]);adsSamples++;adsMask|=uint8_t(1u<<adsChannel);adsOK=adsMask==15;
+     adsRaw[adsChannel]=ads.getLastConversionResults();adsV[adsChannel]=ads.computeVolts(adsRaw[adsChannel]);adsSampleAt[adsChannel]=millis();adsSamples++;adsMask|=uint8_t(1u<<adsChannel);adsOK=adsMask==15;
      adsChannel=(adsChannel+1)%4;ads.startADCReading(ADS1X15_REG_CONFIG_MUX_SINGLE_0+(adsChannel<<12),false);adsStarted=now;
     }else if(adsSeen&&uint32_t(now-adsStarted)>200){adsOK=false;adsSeen=false;adsMask=0;}
    }
   }
-  if(ENABLE_ACS&&uint32_t(now-acsAt)>=50){acsAt=now;acsMV=analogReadMilliVolts(ACS_PIN);acsOK=acsMV>20&&acsMV<3250;acsCurrent=((acsMV/1000.0f)*ACS_FRONTEND_SCALE-ACS_ZERO_V)/ACS_SENSITIVITY_V_PER_A;if(!isfinite(acsCurrent)||fabsf(acsCurrent)>50)acsOK=false;}
+  if(ENABLE_ACS&&uint32_t(now-acsAt)>=50){acsAt=now;acsMV=analogReadMilliVolts(ACS_PIN);acsOK=acsMV>20&&acsMV<3250;acsCurrent=((acsMV/1000.0f)*ACS_FRONTEND_SCALE-ACS_ZERO_V)/ACS_SENSITIVITY_V_PER_A;if(!isfinite(acsCurrent)||fabsf(acsCurrent)>50)acsOK=false;if(acsOK)acsSampleAt=millis();}
   if(ENABLE_GPS){unsigned count=0;while(gpsUart.available()&&count++<256){gpsByteAt=now;char b=gpsUart.read();gps.encode(b);
 #if defined(TEST_STAGE) && TEST_STAGE == 7
     Serial.write(b);
@@ -108,7 +110,7 @@ struct Modules {
   while(rs.available()){int c=rs.read();if(rsCount<sizeof(rsBytes))rsBytes[rsCount++]=c;}
   if(rsPending&&rsCount>=(rsRangeQuery?7u:21u)){
    if(rsRangeQuery){shunt50OK=decodePzem50A(rsBytes,rsCount,PZEM_ADDRESS);shuntAt=now;if(!shunt50OK)pzemOK=false;}
-   else pzemOK=shunt50OK&&decodePzem(rsBytes,rsCount,PZEM_ADDRESS,meter);
+   else {pzemOK=shunt50OK&&decodePzem(rsBytes,rsCount,PZEM_ADDRESS,meter);if(pzemOK)pzemSampleAt=millis();}
    rsPending=false;
   }
   if(rsPending&&uint32_t(now-rsSent)>350){rsPending=false;pzemOK=false;if(rsRangeQuery)shunt50OK=false;}

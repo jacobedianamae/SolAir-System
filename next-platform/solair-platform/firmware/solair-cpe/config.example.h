@@ -42,3 +42,6 @@
 // Set true ONLY after USB AT, UART/registration and actual POST acceptance tests.
 // HTTPS modem uplink remains disabled until carrier-specific CA provisioning is verified.
 #define LTE_HTTP_BENCH_COMMISSIONED false
+
+// No physical arming pin is assigned. Verify wiring and free-pin use before setting.
+#define LOCAL_ARM_PIN -1

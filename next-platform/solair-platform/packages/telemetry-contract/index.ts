@@ -33,6 +33,7 @@ export const telemetrySchema = z
     device_timestamp: z.iso.datetime().nullable().default(null),
     source_type: z.enum(["hardware", "demo"]),
     transport: z.enum(["usb", "wifi", "lte", "simulation"]),
+    sensor_age_ms: z.record(z.string(),z.number().finite().nonnegative()).default({}),
     sensor_health: z.record(
       z.string(),
       z.enum(["ok", "absent", "fault", "uncalibrated"]),
@@ -87,6 +88,10 @@ export const telemetrySchema = z
       .default("unverified"),
     lte_registration: z.string().nullable().default(null),
     lte_signal_quality: z.number().min(0).max(99).nullable().default(null),
+    alarm_id: z.string().min(1).max(80).nullable().default(null),
+    alarm_causes: z.array(z.enum(['lid','mount','motion','sensor_fault'])).max(4).default([]),
+    event_timestamp: z.iso.datetime().nullable().optional(),
+    event_uptime_ms: z.number().int().nonnegative().optional(),
     event_id: z.string().max(80).nullable().default(null),
     event_type: z
       .enum(["motion", "lid", "mount", "sensor_fault"])

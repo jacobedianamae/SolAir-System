@@ -11,7 +11,7 @@ export async function api(
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Request failed");
+  if (!res.ok) throw Object.assign(new Error(data.error || "Request failed"), {status:res.status});
   return data;
 }
 export const stamp = (at?: string | null) =>

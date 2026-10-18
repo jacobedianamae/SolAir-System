@@ -73,6 +73,12 @@ export class Store {
     );
     if (this.pg) await this.pg.query(sql);
     else this.sqlite!.exec(sql);
+    const operations = readFileSync(new URL('../backend/migrations/005_operations.sql', import.meta.url),'utf8');
+    if (this.pg) await this.pg.query(operations); else this.sqlite!.exec(operations);
+    const registration=readFileSync(new URL('../backend/migrations/007_registration.sql',import.meta.url),'utf8');
+    if(this.pg)await this.pg.query(registration);else this.sqlite!.exec(registration);
+    const details=readFileSync(new URL('../backend/migrations/009_registration_details.sql',import.meta.url),'utf8');
+    if(this.pg)await this.pg.query(details);else this.sqlite!.exec(details);
     const cpe = readFileSync(new URL("../backend/migrations/003_cpe.sql", import.meta.url), "utf8");
     if (this.pg) {
       await this.pg.query(cpe);
@@ -80,6 +86,9 @@ export class Store {
     } else this.sqlite!.exec(cpe);
     if(this.pg && process.env.SOLAIR_AUTH_PROVIDER==='supabase') await this.pg.query(readFileSync(new URL('../backend/migrations/002_supabase.sql',import.meta.url),'utf8'));
     if(this.pg && process.env.SOLAIR_AUTH_PROVIDER==='supabase') await this.pg.query(readFileSync(new URL('../backend/migrations/004_cpe_supabase.sql',import.meta.url),'utf8'));
+    if(this.pg && process.env.SOLAIR_AUTH_PROVIDER==='supabase') await this.pg.query(readFileSync(new URL('../backend/migrations/006_operations_supabase.sql',import.meta.url),'utf8'));
+    if(this.pg && process.env.SOLAIR_AUTH_PROVIDER==='supabase') await this.pg.query(readFileSync(new URL('../backend/migrations/008_registration_supabase.sql',import.meta.url),'utf8'));
+    if(this.pg && process.env.SOLAIR_AUTH_PROVIDER==='supabase') await this.pg.query(readFileSync(new URL('../backend/migrations/010_registration_details_supabase.sql',import.meta.url),'utf8'));
   }
   async close() {
     if (this.pg) await this.pg.end();
