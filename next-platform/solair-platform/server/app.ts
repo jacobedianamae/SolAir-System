@@ -11,6 +11,7 @@ import { z } from "zod";
 import { Store } from "./db";
 import { hash, token, passwordHash, verifyPassword, type User } from "./auth";
 import type {IdentityProvider} from './identity';
+import { notifications } from './notifications';
 import {
   telemetrySchema,
   power,
@@ -25,13 +26,14 @@ export function createApp(db: Store, production = false, identity: IdentityProvi
   app.set("trust proxy", 1);
   app.use(
     helmet({
+      referrerPolicy: { policy: "strict-origin-when-cross-origin" },
       contentSecurityPolicy: production
         ? {
             directives: {
               defaultSrc: ["'self'"],
               scriptSrc: ["'self'"],
               styleSrc: ["'self'", "'unsafe-inline'"],
-              imgSrc: ["'self'", "data:", "https://*.tile.openstreetmap.org"],
+              imgSrc: ["'self'", "data:", "https://tile.openstreetmap.org"],
               connectSrc: ["'self'"],
               workerSrc: ["'self'"],
             },
@@ -56,6 +58,7 @@ export function createApp(db: Store, production = false, identity: IdentityProvi
     next();
   });
   const clients = new Map<Response, User>();
+  const streamSessions = new Map<Response, string>();
   const notify = (org: string) => {
     for (const [res, u] of clients)
       if (u.org_id === org) res.write("event: update\ndata: {}\n\n");
@@ -140,12 +143,27 @@ export function createApp(db: Store, production = false, identity: IdentityProvi
       res.json({ ok: true });
     },
   );
-  app.post("/api/logout", auth, async (req, res) => {
+  app.post("/api/logout", async (req, res) => {
+    const sessionHash = hash(req.cookies.session || "");
     await db.run("DELETE FROM sessions WHERE token_hash=?", [
-      hash(req.cookies.session),
+      sessionHash,
     ]);
-    res.clearCookie("session");
+    for (const [stream, key] of streamSessions) if (key === sessionHash) {
+      streamSessions.delete(stream); clients.delete(stream); stream.end();
+    }
+    res.clearCookie("session", { path: "/", httpOnly: true, sameSite: "strict", secure: production });
     res.json({ ok: true });
+  });
+  app.post("/api/problem-reports", auth, rateLimit({ windowMs: 60000, limit: 10 }), async (req, res) => {
+    const u = (req as AuthRequest).user;
+    const report = z.object({
+      summary: z.string().trim().min(5).max(120), details: z.string().trim().min(10).max(4000),
+      page: z.string().max(100), mode: z.enum(["demo", "hardware"]), vehicle_id: z.string().max(40).nullable(),
+    }).strict().parse(req.body);
+    if (report.vehicle_id && !(await vehicle(u, report.vehicle_id))) return res.status(403).json({ error: "Vehicle access denied" });
+    const id = randomUUID();
+    await audit(u, "problem_report", JSON.stringify({ id, ...report }));
+    res.status(201).json({ id, status: "received" });
   });
   app.post('/api/password/reset-request',rateLimit({windowMs:60000,limit:10}),async(req,res)=>{
     if(!identity?.requestRecovery)return res.status(503).json({error:'Password recovery requires configured Supabase authentication'});
@@ -164,14 +182,19 @@ export function createApp(db: Store, production = false, identity: IdentityProvi
     res.set({ "Content-Type": "text/event-stream", Connection: "keep-alive" });
     res.flushHeaders();
     clients.set(res, u);
+    streamSessions.set(res, hash(req.cookies.session || ""));
     res.write("event: ready\ndata: {}\n\n");
     const heartbeat = setInterval(() => res.write(": heartbeat\n\n"), 20000);
     const expiry = setTimeout(() => res.end(), 8 * 3600000);
     req.on("close", () => {
       clients.delete(res);
+      streamSessions.delete(res);
       clearInterval(heartbeat);
       clearTimeout(expiry);
     });
+  });
+  app.get("/api/notifications", auth, async (req, res) => {
+    res.json(await notifications(db, (req as AuthRequest).user, mode(req)));
   });
   app.get("/api/fleet", auth, async (req, res) => {
     const u = (req as AuthRequest).user;

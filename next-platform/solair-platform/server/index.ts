@@ -21,7 +21,7 @@ const port=Number(process.env.PORT)||3000,hostname=process.env.SOLAIR_BIND_HOST|
 const web=next({dev:!production,hostname,port});await web.prepare();
 app.get('/sw.js',(_req,res)=>res.type('application/javascript').set('Cache-Control','no-cache').send(readFileSync(production?'.next/solair-sw.js':'public/sw.js','utf8')));
 app.use((req,res,proceed)=>{
- if(production){const nonce=randomBytes(16).toString('base64');const csp=`default-src 'self'; script-src 'self' 'nonce-${nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.tile.openstreetmap.org; font-src 'self'; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'`;
+ if(production){const nonce=randomBytes(16).toString('base64');const csp=`default-src 'self'; script-src 'self' 'nonce-${nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://tile.openstreetmap.org; font-src 'self'; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'`;
   req.headers['content-security-policy']=csp;req.headers['x-nonce']=nonce;res.setHeader('Content-Security-Policy',csp);
  }
  proceed();

@@ -1,4 +1,4 @@
-# SOLAIR cloud continuation — 12 October 2026, Asia/Manila
+# SOLAIR cloud continuation â€” 12 October 2026, Asia/Manila
 
 This is a durable project/conversation handoff, not an exact export of every chat message. Git transfers source and these notes; it does not automatically transfer the local desktop conversation, temporary attachments, credentials, running services or installed tools. Keep the original chat for the full dialogue and reattach actual board photos when needed.
 
@@ -29,16 +29,16 @@ Pin map: I2C SDA21/SCL22; lid25/mount26 INPUT_PULLUP; alarm27 active-HIGH; statu
 
 ## Actual bench observations and unresolved issues
 
-HOME BENCH ONLY: 12V/5A adapter, no BEMAC traction battery, solar panels or MPPT connected. Siren branch has existing2A fuse and HW-548 F5305S. GPIO27 OFF about0V/ON3.0–3.3V is team-measured; preserve active-HIGH. User reported Test04 manual ON/OFF/automatic5-second cutoff/startup behaviour working. No independently captured timing/current evidence; disconnected-control/USB-loss behaviour remains pending. Test04 local private config enables alarm/polarity for this manual diagnostic; that config is not in Git and does not change global defaults.
+HOME BENCH ONLY: 12V/5A adapter, no BEMAC traction battery, solar panels or MPPT connected. Siren branch has existing2A fuse and HW-548 F5305S. GPIO27 OFF about0V/ON3.0â€“3.3V is team-measured; preserve active-HIGH. User reported Test04 manual ON/OFF/automatic5-second cutoff/startup behaviour working. No independently captured timing/current evidence; disconnected-control/USB-loss behaviour remains pending. Test04 local private config enables alarm/polarity for this manual diagnostic; that config is not in Git and does not change global defaults.
 
 | Test | Latest evidence/status |
 |---|---|
 | 00 ESP/LED | User reports working. |
-| 01 IMU | I2C address0x68, WHO_AM_I0x70. Separate MPU6500-compatible profile implemented, not a modified MPU6050 identity check. User reports readings working; stationary raw jitter285–292. Actual chip authenticity/calibration unverified. Enable ALLOW_MPU6500_COMPAT together with ENABLE_MPU in combined/final private config only after physical gravity/tilt/rotation checks. |
+| 01 IMU | I2C address0x68, WHO_AM_I0x70. Separate MPU6500-compatible profile implemented, not a modified MPU6050 identity check. User reports readings working; stationary raw jitter285â€“292. Actual chip authenticity/calibration unverified. Enable ALLOW_MPU6500_COMPAT together with ENABLE_MPU in combined/final private config only after physical gravity/tilt/rotation checks. |
 | 02 switches | Supplied log released1/1, lid pressed0/1, mount pressed1/0; simultaneous0/0 not separately logged. |
 | 03/04 alarm | User reports described buzzer operation working; retain the limits above. |
-| 05 ADS1115 | UNRESOLVED; do not mark PASS. Original continuous-conversion/completion-poll bug fixed using single-shot scanning. A0 at supply read about3.218V, but all-ground inputs still−0.10…−0.19V. Powered ground measurements reported−0.01…−0.4V on20V DC range; unpowered continuity steady, displayed001–003. |
-| 05a independent ADC | Direct Wire register diagnostic reproduces offset without shared scanner or Adafruit ADC library. V2 adds differential reads. Latest single-ended A0−0.15413/−0.15775V, A1–A3−0.11600V; differential A0−A1 0/0.00238V, A2−A3 0/0.00013V, all valid with expected config readback. Differences near zero do not prove accurate single-ended readings or identify a defective part. Need actual-board photo/contacts/reference/power investigation or known-good comparison. Do not subtract a guessed offset. |
+| 05 ADS1115 | UNRESOLVED; do not mark PASS. Original continuous-conversion/completion-poll bug fixed using single-shot scanning. A0 at supply read about3.218V, but all-ground inputs stillâˆ’0.10â€¦âˆ’0.19V. Powered ground measurements reportedâˆ’0.01â€¦âˆ’0.4V on20V DC range; unpowered continuity steady, displayed001â€“003. |
+| 05a independent ADC | Direct Wire register diagnostic reproduces offset without shared scanner or Adafruit ADC library. V2 adds differential reads. Latest single-ended A0âˆ’0.15413/âˆ’0.15775V, A1â€“A3âˆ’0.11600V; differential A0âˆ’A1 0/0.00238V, A2âˆ’A3 0/0.00013V, all valid with expected config readback. Differences near zero do not prove accurate single-ended readings or identify a defective part. Need actual-board photo/contacts/reference/power investigation or known-good comparison. Do not subtract a guessed offset. |
 | 06 ACS758 | Not physically accepted; exact board supply/current terminals/conditioning and full-range ESP-safe output unverified. Do not connect VOUT directly to GPIO34. |
 | 07 GPS | Not physically accepted; actual NEO-6M breakout VCC rating/TX level still unverified. User wants direct wiring after board identification. |
 | 08 LTE | User has SIMCom A7670E compact green carrier with micro-USB/white connector. Model known; exact carrier USB supply and connector translation unverified. Seller page could not be read. Native UART1.8V; do not assume direct3.3V compatibility. USB-first AT workflow implemented; manual Arduino Serial Monitor steps also documented. No actual registration/upload PASS supplied. |
@@ -76,3 +76,10 @@ Git excludes private env/firmware configs, working data and databases, node_modu
 ## Cloud connection steps
 
 After the reviewed source snapshot is committed and pushed to the intended repository, sign into the same account on web/desktop, choose Work in > Cloud, Select environment > Create environment, connect GitHub and choose andreirtc/SolAir. Let Codex prepare the repository with Node24 and the app subdirectory, review setup/test results and publish the environment. Start a cloud task with the prompt above. Official workflow: https://learn.chatgpt.com/docs/cloud . Account/UI availability can differ; source upload alone does not create the environment or move this exact desktop conversation.
+
+
+## 18 October 2026 — separate-checkout UI integration (software verification only)
+
+Branch `feature/local-ui-notifications` integrates account/logout controls, Light/Dark/System appearance, support/problem reports, authorized notifications and Malabon map fixes. The group CPE firmware, telemetry contract, migrations, hardware-only offline sweep and private device listener were preserved. SQLite and embedded PostgreSQL suites each passed 54 tests; production build, type checking, lint and desktop/mobile browser checks passed. CPE browser readings were explicitly software fixtures in a temporary database. No firmware was uploaded, outputs activated or physical tests performed. ADS single-ended accuracy remains unresolved as recorded above. No commit or push was made.
+
+See [the integration report](LOCAL_UI_INTEGRATION_2026-10-18.md) for exact files, validation limits and proposed review/commit commands.

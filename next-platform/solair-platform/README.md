@@ -74,3 +74,9 @@ npm run retention     # scheduled deletion of expired location-bearing telemetry
 `npm start` serves the production build. A persistent PostgreSQL database and reachable HTTPS domain are needed for a real centralized fleet. Configuration instructions are included; no hosted deployment, physical sensor result or LTE packet transport is claimed.
 
 The screenshot and software tests do not constitute thesis measurements. The guided physical tests remain NOT TESTED or BLOCKED until an engineer records real evidence. Wind generation, traction voltage/current sensing, SOC and validated runtime forecasting are unavailable until the hardware and models are commissioned.
+
+## Account, appearance, notifications and Malabon map integration
+
+Account controls include Profile, Help and support, persisted problem reports, and Log out immediately below Settings. Appearance supports Light, Dark and System. The notification bell opens an authorized activity dropdown, with hardware/demo separation. The fleet map opens on Malabon and retains the CPE GPS freshness checks.
+
+See [Account and appearance](docs/ACCOUNT_AND_APPEARANCE.md), [Notifications](docs/NOTIFICATIONS.md), and [integration validation report](docs/LOCAL_UI_INTEGRATION_2026-10-18.md). Current CPE continuation and firmware instructions above remain authoritative.

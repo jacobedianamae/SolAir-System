@@ -1,0 +1,90 @@
+import {chromium,type Page} from "playwright";
+import assert from "node:assert/strict";
+import {mkdirSync,writeFileSync} from "node:fs";
+const base=process.env.TEST_URL;
+if(!base)throw new Error("Set TEST_URL to a separately seeded disposable local production preview");
+const output="test-results/notifications-ui";
+mkdirSync(output,{recursive:true});
+const browser=await chromium.launch();
+const errors:string[]=[],results:string[]=[];
+async function login(page:Page,role:string){
+ page.on('pageerror',error=>errors.push(error.message));
+ await page.goto(base!);
+ assert.equal((await page.request.get(base!+'/api/health').then(r=>r.json())).environment,'local production preview');
+ await page.getByLabel('Email address').fill(`${role}@solair.local`);
+ await page.getByLabel('Password',{exact:true}).fill('SolairDemo!2026');
+ await page.getByRole('button',{name:'Sign in',exact:true}).click();
+ await page.getByRole('heading',{name:role==='driver'?'Ready for the road, Miguel.':'Fleet overview'}).waitFor();
+ await page.getByLabel('Data mode').selectOption('demo');
+ await page.getByRole('button',{name:'Refresh',exact:true}).click();
+}
+async function open(page:Page){
+ await page.getByRole('button',{name:/Open notifications/}).click();
+ const dialog=page.getByRole('dialog',{name:'Notifications',exact:true});
+ await dialog.getByRole('button',{name:'Close notifications'}).waitFor();
+ return dialog;
+}
+try{
+ const context=await browser.newContext({viewport:{width:1480,height:900},colorScheme:'light'});
+ await context.route('https://tile.openstreetmap.org/**',route=>route.fulfill({contentType:'image/svg+xml',body:'<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256"><rect width="256" height="256" fill="#d9e9e5"/></svg>'}));
+ const page=await context.newPage();await login(page,'operator');
+ const logout=page.locator('.sidebar nav').getByRole('button',{name:'Log out',exact:true});
+ assert.equal(await logout.evaluate(element=>element.previousElementSibling?.textContent?.trim()),'Settings');
+ await logout.scrollIntoViewIfNeeded();
+ let dialog=await open(page);
+ await dialog.getByText('Solar energy harvested',{exact:true}).first().waitFor();
+ assert.equal(await page.getByRole('heading',{name:'Fleet overview',exact:true}).count(),1);
+ await page.screenshot({path:output+'/desktop-dropdown.png',fullPage:false});
+ for(const [category,title] of [['security','Mount switch released'],['alert','Device offline'],['system','Vehicle registered']] as const){
+   await dialog.getByLabel('Notification category').selectOption(category);
+   await dialog.getByText(title,{exact:true}).first().waitFor();
+ }
+ await dialog.getByLabel('Notification category').selectOption('energy');
+ await dialog.getByRole('button').filter({hasText:'Solar energy harvested'}).first().click();
+ await page.getByRole('heading',{name:'Energy',exact:true}).waitFor();
+ assert.equal(await page.getByRole('dialog',{name:'Notifications',exact:true}).count(),0);
+ dialog=await open(page);await dialog.getByRole('button',{name:'Mark all read',exact:true}).click();
+ assert.equal(await page.locator('.notification-count').count(),0);
+ const alerts=await page.evaluate(async()=>fetch('/api/alerts?mode=demo').then(r=>r.json()));
+ assert.ok(alerts.every((item:{ack_by:string|null})=>item.ack_by===null));
+ await page.reload();await page.getByRole('heading',{name:'Fleet overview'}).waitFor();
+ await page.getByLabel('Data mode').selectOption('demo');
+ dialog=await open(page);await dialog.getByText('Solar energy harvested',{exact:true}).first().waitFor();
+ assert.equal(await dialog.getByRole('button',{name:'Mark all read',exact:true}).isDisabled(),true);
+ results.push('Log out immediately follows Settings; bell opens a dropdown without navigation; category filters, detail navigation and persistent read markers pass');
+ await page.keyboard.press('Escape');
+ const created=await page.evaluate(async()=>fetch('/api/vehicles',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:`NOTIFY-${Date.now()}`,name:'Disposable notification test vehicle'})}).then(r=>r.status));
+ assert.equal(created,201);
+ await page.locator('.notification-count').waitFor();
+ dialog=await open(page);await dialog.getByText('Vehicle registered',{exact:true}).first().waitFor();
+ results.push('Recorded system changes arrive through live updates; marking read does not acknowledge security incidents');
+ await dialog.getByRole('button',{name:'Close notifications'}).click();
+ await page.getByLabel('Data mode').selectOption('hardware');
+ dialog=await open(page);await dialog.getByLabel('Notification category').selectOption('energy');
+ await dialog.getByText('No recorded updates',{exact:true}).waitFor();
+ assert.equal(await dialog.getByText('SIMULATED',{exact:false}).count(),0);
+ await dialog.getByRole('button',{name:'Close notifications'}).click();
+ await page.route(/\/api\/notifications\?/,route=>route.fulfill({status:503,json:{error:'Temporary test failure'}}));
+ await page.getByRole('button',{name:'Refresh',exact:true}).click();
+ dialog=await open(page);await dialog.getByText(/Updates could not be refreshed/).waitFor();
+ await page.unroute(/\/api\/notifications\?/);
+ await dialog.getByRole('button',{name:'Retry',exact:true}).click();
+ await page.waitForFunction(()=>!document.querySelector('.notification-error'));
+ results.push('Hardware mode does not show demo energy; refresh failure and retry are honest and recover');
+ await context.close();
+ const mobile=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,colorScheme:'dark'});
+ const phone=await mobile.newPage();await login(phone,'driver');
+ const feed=await open(phone);await feed.getByText('Solar energy harvested',{exact:true}).first().waitFor();
+ const bounds=await feed.boundingBox();assert.ok(bounds&&bounds.x>=0&&bounds.x+bounds.width<=390&&bounds.y+bounds.height<=844);
+ await phone.screenshot({path:output+'/phone-dark-dropdown.png',fullPage:false});
+ await phone.getByRole('button',{name:'Open account menu',exact:true}).click();
+ assert.equal(await phone.getByRole('dialog',{name:'Notifications',exact:true}).count(),0);
+ await phone.keyboard.press('Escape');
+ await phone.getByRole('button',{name:'Toggle menu'}).click();
+ const mobileLogout=phone.locator('.sidebar nav').getByRole('button',{name:'Log out',exact:true});
+ assert.equal(await mobileLogout.evaluate(element=>element.previousElementSibling?.textContent?.trim()),'Profile');
+ await mobileLogout.click();await phone.getByRole('heading',{name:'Welcome to SOLAIR'}).waitFor();
+ results.push('Phone dark dropdown fits and closes when the account menu opens; relocated mobile logout works');
+ assert.deepEqual(errors,[]);
+ writeFileSync(output+'/results.json',JSON.stringify({results,errors},null,2));console.log(results.join('\n'));
+}finally{await browser.close();}

@@ -30,6 +30,10 @@ import { api, stamp, value, money } from "./api";
 import { VehicleVisualization } from "./VehicleVisualization";
 import type { Vehicle, Profile } from "./types";
 import PasswordRecovery from './PasswordRecovery';
+import AccountMenu from './AccountMenu';
+import Notifications from './Notifications';
+import { Appearance, ThemeProvider } from './Theme';
+import { HelpSupport, ProblemReport } from './Support';
 import CpeReadings from './CpeReadings';
 import CpeHistory from './CpeHistory';
 import { power, freshness } from "../packages/telemetry-contract";
@@ -460,12 +464,45 @@ function App() {
     [queueCount, setQueueCount] = useState(0),
     [tick, setTick] = useState(0),
     [offset, setOffset] = useState(0);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [notificationRevision, setNotificationRevision] = useState(0);
+  const logoutPending = useRef(false);
+  const [reportPage, setReportPage] = useState("Overview");
   const requestKey = useRef("");
   requestKey.current = `${user?.id || ""}:${user?.org_id || ""}:${mode}`;
   const toast = useCallback((s: string) => {
     setNotice(s);
     setTimeout(() => setNotice(""), 7000);
   }, []);
+  const clearSession = useCallback(() => {
+    requestKey.current = "";
+    setUser(null); setFleet([]); setAlerts([]); setHelp([]); setMessages([]);
+    setRecords([]); setUsers([]); setAudit([]); setOrgs([]); setNotice("");
+    setOrganization("Your TODA"); setQueueCount(0); setDrawer(false);
+    setSelected("ET-01"); setOffset(0); setPage("Overview");
+  }, []);
+  async function logout() {
+    if (logoutPending.current) return;
+    logoutPending.current = true; setLoggingOut(true);
+    try {
+      await api("/logout", "POST");
+      clearSession();
+      try { localStorage.setItem("solair-signout", crypto.randomUUID()); } catch { /* Current tab is signed out. */ }
+    } catch {
+      toast("Could not log out. Reconnect and try again; your server session has not been confirmed as closed.");
+    } finally { logoutPending.current = false; setLoggingOut(false); }
+  }
+  useEffect(() => {
+    const signout = (event: StorageEvent) => { if (event.key === "solair-signout" && event.newValue) clearSession(); };
+    window.addEventListener("storage", signout);
+    return () => window.removeEventListener("storage", signout);
+  }, [clearSession]);
+  useEffect(() => {
+    if (!drawer) return;
+    const close = (event: KeyboardEvent) => { if (event.key === "Escape") setDrawer(false); };
+    window.addEventListener("keydown", close);
+    return () => window.removeEventListener("keydown", close);
+  }, [drawer]);
   const login = () =>
     api("/me")
       .then((u) => {
@@ -509,6 +546,7 @@ function App() {
       setFleet(f);
       setAlerts(a);
       setHelp(h);
+      setNotificationRevision((value) => value + 1);
       setOffline(false);
     } catch (e) {
       if (requestKey.current !== key) return;
@@ -610,6 +648,7 @@ function App() {
   const driver = user?.role === "driver";
   const labAllowed = ["engineer", "admin"].includes(user?.role || "");
   const go = (p: string) => {
+    if (p === "Report a problem") setReportPage(page);
     setPage(p);
     setDrawer(false);
   };
@@ -636,6 +675,7 @@ function App() {
   ] as const;
   return (
     <div className={"app " + (driver ? "driver-app" : "")}>
+      {drawer && <button className="sidebar-backdrop" aria-label="Close navigation" onClick={() => setDrawer(false)} />}
       <aside className={drawer ? "sidebar open" : "sidebar"}>
         <Brand />
         <div className="organization">
@@ -672,6 +712,9 @@ function App() {
                 )}
             </button>
           ))}
+          <button className="logout" onClick={() => { void logout(); }} disabled={loggingOut}>
+            <LogOut size={17} />{loggingOut ? "Logging out…" : "Log out"}
+          </button>
           {labAllowed && (
             <>
               <span className="nav-label">ENGINEERING</span>
@@ -705,18 +748,6 @@ function App() {
               <small>{user.role}</small>
             </span>
           </button>
-          <button
-            className="logout"
-            onClick={async () => {
-              await api("/logout", "POST");
-              setUser(null);
-              setFleet([]);
-              setNotice("");
-            }}
-          >
-            <LogOut size={15} />
-            Sign out
-          </button>
         </div>
       </aside>
       <div className="workspace">
@@ -739,14 +770,8 @@ function App() {
                 ? "Local development"
                 : health?.environment === 'local production preview' ? 'Local production preview' : 'Centralized workspace'}
             </span>
-            <button
-              onClick={() => go("Security")}
-              aria-label="Open notification center"
-            >
-              <Bell size={19} />
-              {alerts.filter((a) => !a.ack_by).length > 0 && <i />}
-            </button>
-            <span className="avatar small">{user.name[0]}</span>
+            <Notifications key={`${user.id}:${user.org_id}:${mode}`} user={user} mode={mode} refreshKey={tick + notificationRevision} go={go} select={select} />
+            <AccountMenu user={user} go={go} logout={logout} busy={loggingOut} />
           </div>
         </header>
         <div className={"data-banner " + (mode === "hardware" ? "real" : "")}>
@@ -842,10 +867,22 @@ function App() {
             </div>
           )}
           {!v ? (
-            <section className="panel empty">
-              <Truck size={36} />
-              <h2>No assigned vehicle</h2>
-              <p>Your TODA operator can assign an e-trike in Settings.</p>
+            <section className={page === "Live Fleet Map" ? "panel full-map" : "panel empty"}>
+              {page === "Live Fleet Map" ? (
+                <>
+                  <div className="panel-heading"><h3>Malabon, Philippines</h3><span className="badge">0 valid positions</span></div>
+                  <Suspense fallback={<p>Loading map…</p>}>
+                    <FleetMap vehicles={fleet} select={select} mode={mode} />
+                  </Suspense>
+                  <p>No assigned vehicles. Showing Malabon as a reference.</p>
+                </>
+              ) : (
+                <>
+                  <Truck size={36} />
+                  <h2>No assigned vehicle</h2>
+                  <p>Your TODA operator can assign an e-trike in Settings.</p>
+                </>
+              )}
             </section>
           ) : (
             <>
@@ -945,7 +982,7 @@ function App() {
                             <span className="dot green" />
                             Valid reported fixes
                           </span>
-                          <span>Manila, Philippines</span>
+                <span>Malabon, Philippines</span>
                         </div>
                       </section>
                     )}
@@ -1526,6 +1563,7 @@ function App() {
           {page === "Settings" && (
             <div className="settings-grid">
               <section className="panel">
+                <Appearance />
                 <h3>Your SOLAIR profile</h3>
                 <form
                   onSubmit={(e) => {
@@ -1807,6 +1845,8 @@ function App() {
               )}
             </div>
           )}
+          {page === "Help and support" && <HelpSupport go={go} />}
+          {page === "Report a problem" && <ProblemReport page={reportPage} mode={mode} vehicleId={v?.id} />}
           <footer>
             SOLAIR · Hybrid energy & edge security
             <span>
@@ -1979,4 +2019,4 @@ function EnergyHistory({ v, mode }: { v: Vehicle; mode: string }) {
     </section>
   );
 }
-export default function SolairApp(){return <Boundary>{location.pathname==='/reset-password'?<PasswordRecovery/>:<App/>}</Boundary>;}
+export default function SolairApp(){return <ThemeProvider><Boundary>{location.pathname==='/reset-password'?<PasswordRecovery/>:<App/>}</Boundary></ThemeProvider>;}

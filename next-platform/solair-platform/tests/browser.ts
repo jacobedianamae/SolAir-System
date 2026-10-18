@@ -242,7 +242,7 @@ results.push(
 );
 await op
   .locator(".sidebar")
-  .getByRole("button", { name: "Sign out", exact: true })
+  .getByRole("button", { name: "Log out", exact: true })
   .click();
 await op.getByRole("heading", { name: "Welcome to SOLAIR" }).waitFor();
 assert.equal(

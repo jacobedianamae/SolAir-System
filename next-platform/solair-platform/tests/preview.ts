@@ -20,7 +20,7 @@ await page.screenshot({
   fullPage: false,
 });
 console.log("Operator screenshot captured");
-await page.getByRole("button", { name: "Sign out", exact: true }).click();
+await page.getByRole("button", { name: "Log out", exact: true }).click();
 await page.getByLabel('Email address').fill('engineer@solair.local');
 await page.getByLabel('Password',{exact:true}).fill('SolairDemo!2026');
 await page.getByRole("button", { name: "Sign in", exact: true }).click();
@@ -30,7 +30,7 @@ await page.getByLabel('Data mode').selectOption('hardware');
 await page.getByText('Never connected',{exact:true}).first().waitFor();
 await page.evaluate(()=>window.scrollTo(0,0));
 await page.screenshot({ path: "docs/screenshots/cpe-lab.png", fullPage: true });
-await page.getByRole("button", { name: "Sign out", exact: true }).click();
+await page.getByRole("button", { name: "Log out", exact: true }).click();
 await page.getByLabel('Email address').fill('driver@solair.local');
 await page.getByLabel('Password',{exact:true}).fill('SolairDemo!2026');
 await page.getByRole("button", { name: "Sign in", exact: true }).click();
