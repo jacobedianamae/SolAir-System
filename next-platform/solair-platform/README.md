@@ -80,3 +80,11 @@ The screenshot and software tests do not constitute thesis measurements. The gui
 Account controls include Profile, Help and support, persisted problem reports, and Log out immediately below Settings. Appearance supports Light, Dark and System. The notification bell opens an authorized activity dropdown, with hardware/demo separation. The fleet map opens on Malabon and retains the CPE GPS freshness checks.
 
 See [Account and appearance](docs/ACCOUNT_AND_APPEARANCE.md), [Notifications](docs/NOTIFICATIONS.md), and [integration validation report](docs/LOCAL_UI_INTEGRATION_2026-10-18.md). Current CPE continuation and firmware instructions above remain authoritative.
+
+## Operational accounts and alarm notifications
+
+The operational feature branch adds direct account signup, verified contact preferences, device commissioning, alarm incidents, a disabled-by-default SMS worker and research CSV exports. See [setup and exact environment variables](docs/OPERATIONAL_SETUP.md), [physical/SMS acceptance gates](docs/OPERATIONAL_ACCEPTANCE.md), and [implementation/validation report](docs/OPERATIONAL_IMPLEMENTATION_2026-10-18.md). The demo and historical CPE evidence remain preserved. Real SMS, cloud commissioning, uploads and physical outputs were not activated by software implementation.
+
+## Combined local presentation launcher
+
+The original local checkout now serves the integrated application on localhost:3000, with port 3001 redirecting to it. This group-based checkout includes the same safe launcher: after configuring an ignored local database and building, run `npm.cmd run start:combined` from this application directory. The launcher explicitly disables paid SMS/cloud services and requires an existing local database. Working accounts, databases and rollback snapshots are not included in Git. See [the local integration handoff](docs/PORT3000_INTEGRATION.md). Its flat-checkout paths and checkpoint branch describe the original local installation; this repository retains its authoritative nested application layout and existing root AGENTS instructions.

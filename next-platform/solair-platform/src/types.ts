@@ -5,6 +5,7 @@ export type Vehicle = {
   model: string;
   image_url: string;
   driver_name: string | null;
+  driver_display_name?:string|null;
   driver_id: string | null;
   device_id: string | null;
   status: string;
@@ -21,5 +22,6 @@ export type Profile = {
   email: string;
   role: string;
   org_id: string;
+  organization_name?:string;
   notifications: number;
 };

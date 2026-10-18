@@ -1862,3 +1862,21 @@ code {
   .driver-app .driver-electrical { padding: 17px; }
   .driver-app .driver-electrical .electrical-grid strong { font-size: 32px; }
 }
+
+/* Account directory: bounded pages rather than a form for every registrant. */
+.people-directory .directory-filters{display:flex;flex-wrap:wrap;gap:12px;align-items:end}
+.people-directory .directory-filters label{flex:1;min-width:160px}
+.person-card{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:18px 0;border-bottom:1px solid var(--border,#53677a)}
+.person-card>div{min-width:0;flex:1}.person-card p,.person-card small{overflow-wrap:anywhere}.person-editor{flex-basis:100%;width:100%}
+.people-directory details{margin-top:24px}.people-directory summary{cursor:pointer;font-weight:700}
+@media(max-width:600px){.directory-filters{flex-direction:column;align-items:stretch!important}.directory-filters label{width:100%}.person-card>div{flex-basis:100%}}
+
+.registration-details dl{display:grid;grid-template-columns:minmax(110px,1fr) 2fr;gap:10px 16px}.registration-details dt{font-weight:600}.registration-details dd{margin:0;overflow-wrap:anywhere}.registration-details article,.activity-record,.operator-information{padding:18px 0;border-top:1px solid var(--border,#53677a)}.activity-record p,.activity-record small{overflow-wrap:anywhere}.vehicle-placeholder{padding:48px;text-align:center}.vehicle-placeholder strong{font-size:32px}
+@media(max-width:600px){.registration-details dl{grid-template-columns:1fr}.registration-details dd{margin-bottom:10px}}
+
+.toda-menu{position:relative;flex-shrink:0;margin:33px 0 26px;z-index:30}
+.sidebar .toda-menu .organization{margin:0;width:100%;background:transparent;text-align:left;justify-content:flex-start;font-weight:400}
+.toda-trigger-label{flex:1;min-width:0;overflow-wrap:anywhere}.toda-menu .org-avatar{flex-shrink:0}.toda-menu svg{flex-shrink:0;transition:transform .15s}.toda-menu svg.expanded{transform:rotate(180deg)}
+.toda-dropdown{position:absolute;left:0;top:calc(100% + 8px);width:100%;padding:16px;border:1px solid #3c5269;border-radius:10px;background:#16283e;color:#e4edf4;box-shadow:0 12px 28px #0005;max-height:45dvh;overflow-y:auto;font-size:12px;overflow-wrap:anywhere}
+.toda-dropdown strong,.toda-vehicle span{display:block}.toda-detail-label{display:block;color:#a1b8cc;font-size:10px;margin:0 0 6px}.toda-detail-label:not(:first-child){margin-top:16px}.toda-dropdown p{color:#c0d0de;font-size:12px;margin:6px 0}.toda-vehicle+.toda-vehicle{margin-top:12px}.toda-vehicle span{color:#b5c8d8;font-size:11px;margin-top:4px}
+@media(max-width:600px){.toda-menu{margin:22px 0 18px}}
